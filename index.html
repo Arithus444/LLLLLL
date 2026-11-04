@@ -11,8 +11,8 @@ input{width:100%;padding:11px 14px;border:1px solid #334155;border-radius:12px;f
 .bus{background:#2a3042;border-radius:100px 100px 32px 32px;padding:26px 18px 18px;margin:8px 0 16px}
 .front{text-align:center;font-size:12px;color:#94a3b8}.wind{height:44px;background:#0b0e16;margin:6px 10px 14px;clip-path:polygon(0 25%,50% 0,100% 25%,94% 100%,6% 100%)}
 .cab{display:flex;justify-content:space-between;margin-bottom:14px}.cab div{width:80px;height:52px;border-radius:14px;background:#1f2536;display:flex;align-items:center;justify-content:center;font-size:12px;color:#94a3b8}.cab div+div{background:#475069;color:#fff}
-.row{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:center;margin-bottom:6px}.row.one{grid-template-columns:1fr 1fr 22px 1fr 1fr}.row.back{grid-template-columns:repeat(5,1fr);margin-top:12px;padding-top:12px;border-top:2px dashed #475069}
-.bench{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#3a4258;border-radius:16px;padding:6px}
+.row{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:center;margin-bottom:6px}.row.one{grid-template-columns:1fr 1fr 22px 1fr 1fr}.row.back{grid-template-columns:2fr 3fr;gap:10px;margin-top:12px;padding-top:12px;border-top:2px dashed #475069}
+.bench{display:grid;grid-template-columns:repeat(var(--n,2),1fr);gap:6px;background:#3a4258;border-radius:16px;padding:6px}
 .num{text-align:center;font-size:12px;color:#64748b}
 .seat{border:2px solid;border-radius:12px;height:54px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font:inherit;min-width:0}
 .seat b{font-size:14px}.seat .nm{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -61,25 +61,30 @@ async function enter(c,quiet){if(DEMO){if(!quiet)toast('ยังไม่ได
 async function load(){try{const d=await rpc('get_seats',{p_code:code});seats={};d.forEach(s=>seats[s.seat_id]=s);banner(DEMO?'โหมดทดลอง: ข้อมูลไม่ถูกบันทึก ใช้ดูหน้าตาเท่านั้น':'');render()}
  catch(e){if(e.message.includes('BAD_CODE')){logout();toast('รหัสถูกเปลี่ยนแล้ว กรุณาใส่ใหม่')}else banner('เชื่อมต่อฐานข้อมูลไม่ได้: '+e.message)}}
 async function act(fn,a,ok){try{await rpc(fn,{p_code:code,...a});if(ok)toast(ok)}catch(e){const m=e.message;toast(m.includes('SEAT_TAKEN')?'ที่นั่งนี้ถูกจองไปแล้ว':m.includes('FORBIDDEN')?'ไม่มีสิทธิ์แอดมิน':m.includes('BAD_CODE')?'รหัสไม่ถูกต้อง':'ผิดพลาด: '+m)}await load()}
-function seat(id){const s=seats[id];if(!s)return el('div');const b=el('button','seat '+s.status);b.append(el('b',0,id));if(s.status==='booked')b.append(el('span','nm',s.booker_name));
- if(q&&s.booker_name&&s.booker_name.toLowerCase().includes(q))b.classList.add('hit');b.onclick=()=>pick(id);return b}
-async function pick(id){const s=seats[id];if(s.status==='available'){const n=await ask('จองที่นั่ง '+id,'กรอกชื่อของคุณเพื่อยืนยันการจอง','','ยืนยันการจอง');if(n)act('book_seat',{p_seat:id,p_name:n},'จอง '+id+' สำเร็จ')}
- else if(role==='admin')edit(id);else toast('ที่นั่ง '+id+' จองโดย '+s.booker_name)}
-async function edit(id){const n=await ask('แก้ไขชื่อ '+id,'ชื่อผู้จองใหม่',seats[id].booker_name,'บันทึก');if(n)act('admin_rename',{p_seat:id,p_name:n})}
+const UNITS=[['1B'],['1C'],['1D']];for(let r=2;r<=9;r++)UNITS.push([r+'A',r+'B'],[r+'C',r+'D']);UNITS.push(['10A','10B'],['10C','10D','10E']);
+function errMsg(e){const m=e.message;return m.includes('SEAT_TAKEN')?'ที่นั่งนี้ถูกจองไปแล้ว':m.includes('FORBIDDEN')?'ไม่มีสิทธิ์แอดมิน':m.includes('BAD_CODE')?'รหัสไม่ถูกต้อง':'ผิดพลาด: '+m}
+async function actMany(fn,arr,ok){try{for(const a of arr)await rpc(fn,{p_code:code,...a});if(ok)toast(ok)}catch(e){toast(errMsg(e))}await load()}
+function unit(ids){ids=ids.filter(i=>seats[i]);if(!ids.length)return el('div');const bk=ids.map(i=>seats[i]).find(s=>s.status==='booked');
+ const b=el('button','seat '+(bk?'booked':'available'));b.append(el('b',0,ids.join('·')));if(bk)b.append(el('span','nm',bk.booker_name));
+ if(q&&bk&&bk.booker_name&&bk.booker_name.toLowerCase().includes(q))b.classList.add('hit');b.onclick=()=>pick(ids);return b}
+async function pick(ids){const bk=ids.map(i=>seats[i]).find(s=>s.status==='booked'),L=ids.join('·');
+ if(!bk){const n=await ask('จองที่นั่ง '+L,'กรอกชื่อของคุณเพื่อยืนยันการจอง','','ยืนยันการจอง');if(n)actMany('book_seat',ids.map(i=>({p_seat:i,p_name:n})),'จอง '+L+' สำเร็จ')}
+ else if(role==='admin')edit(ids);else toast('ที่นั่ง '+L+' จองโดย '+bk.booker_name)}
+async function edit(ids){const bk=ids.map(i=>seats[i]).filter(s=>s&&s.status==='booked');if(!bk.length)return;const n=await ask('แก้ไขชื่อ '+ids.join('·'),'ชื่อผู้จองใหม่',bk[0].booker_name,'บันทึก');if(n)actMany('admin_rename',bk.map(s=>({p_seat:s.seat_id,p_name:n})))}
 function render(){const R=$('#rows');R.replaceChildren();
- const f=el('div','row one');f.append(seat('1A'),seat('1B'),el('div','num',1),seat('1C'),seat('1D'));R.append(f);
- for(let r=2;r<=9;r++){const d=el('div','row'),sd=l=>{const s=el('div','bench');l.forEach(x=>s.append(seat(r+x)));return s};d.append(sd(['A','B']),el('div','num',r),sd(['C','D']));R.append(d)}
- const bk=el('div','row back');['A','B','C','D','E'].forEach(l=>bk.append(seat('10'+l)));R.append(bk);
+ const f=el('div','row one');f.append(el('div'),unit(['1B']),el('div','num',1),unit(['1C']),unit(['1D']));R.append(f);
+ for(let r=2;r<=9;r++){const d=el('div','row');d.append(unit([r+'A',r+'B']),el('div','num',r),unit([r+'C',r+'D']));R.append(d)}
+ const bk=el('div','row back');bk.append(unit(['10A','10B']),unit(['10C','10D','10E']));R.append(bk);
  const all=Object.values(seats),n=k=>all.filter(s=>s.status===k).length;
  $('#stats').replaceChildren(...[['ทั้งหมด',all.length],['ว่าง',n('available')],['จองแล้ว',n('booked')]].map(([a,b])=>{const d=el('div','stat');d.append(el('b',0,b),el('span',0,a));return d}));
  $('#qr').textContent=q?'พบ '+document.querySelectorAll('.hit').length+' ที่นั่ง':'';$('#out').textContent=(role==='admin'?'แอดมิน · ':'')+'ออก';
  const A=$('#admin');A.replaceChildren();if(role!=='admin')return;
  const c=el('div','card');c.append(el('b',0,'แผงผู้ดูแล'));
- const bs=all.filter(s=>s.status==='booked').sort((a,b)=>a.seat_id.localeCompare(b.seat_id,'en',{numeric:true}));
+ const bs=UNITS.map(u=>u.filter(i=>seats[i])).filter(u=>u.some(i=>seats[i].status==='booked'));
  if(!bs.length)c.append(el('div',0,'ยังไม่มีผู้จอง'));
- bs.forEach(s=>{const r=el('div','ar');r.append(el('b',0,s.seat_id),el('span',0,s.booker_name));
-  const e=el('button','btn g','แก้ชื่อ');e.onclick=()=>edit(s.seat_id);
-  const x=el('button','btn r','ยกเลิก');x.onclick=()=>confirm('ยกเลิกการจอง '+s.seat_id+' ของ '+s.booker_name+'?')&&act('admin_cancel',{p_seat:s.seat_id});r.append(e,x);c.append(r)});
+ bs.forEach(u=>{const L=u.join('·'),bk=u.map(i=>seats[i]).filter(x=>x.status==='booked'),nm=bk[0].booker_name,r=el('div','ar');r.append(el('b',0,L),el('span',0,nm));
+  const e=el('button','btn g','แก้ชื่อ');e.onclick=()=>edit(u);
+  const x=el('button','btn r','ยกเลิก');x.onclick=()=>confirm('ยกเลิกการจอง '+L+' ของ '+nm+'?')&&actMany('admin_cancel',bk.map(y=>({p_seat:y.seat_id})));r.append(e,x);c.append(r)});
  const z=el('button','btn r','รีเซ็ตการจองทั้งหมด');z.style.marginTop='12px';z.onclick=()=>confirm('ล้างการจองทั้งหมด?')&&act('admin_reset',{});c.append(z);A.append(c)}
 $('#go').onclick=()=>enter($('#code').value.trim());$('#code').onkeydown=e=>{if(e.key==='Enter')$('#go').click()};
 $('#out').onclick=logout;$('#q').oninput=e=>{q=e.target.value.trim().toLowerCase();render()};
