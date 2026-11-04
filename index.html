@@ -11,8 +11,8 @@ input{width:100%;padding:11px 14px;border:1px solid #334155;border-radius:12px;f
 .bus{background:#2a3042;border-radius:100px 100px 32px 32px;padding:26px 18px 18px;margin:8px 0 16px}
 .front{text-align:center;font-size:12px;color:#94a3b8}.wind{height:44px;background:#0b0e16;margin:6px 10px 14px;clip-path:polygon(0 25%,50% 0,100% 25%,94% 100%,6% 100%)}
 .cab{display:flex;justify-content:space-between;margin-bottom:14px}.cab div{width:80px;height:52px;border-radius:14px;background:#1f2536;display:flex;align-items:center;justify-content:center;font-size:12px;color:#94a3b8}.cab div+div{background:#475069;color:#fff}
-.row{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:center;margin-bottom:6px}.row.one{grid-template-columns:1fr 1fr 22px 1fr 1fr}.row.back{grid-template-columns:2fr 3fr;gap:16px;margin-top:12px;padding-top:12px;border-top:2px dashed #475069}
-.side{display:grid;gap:6px}.grp{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:6px}
+.row{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:center;margin-bottom:6px}.row.one{grid-template-columns:1fr 1fr 22px 1fr 1fr}.row.back{grid-template-columns:repeat(5,1fr);margin-top:12px;padding-top:12px;border-top:2px dashed #475069}
+.bench{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#3a4258;border-radius:16px;padding:6px}
 .num{text-align:center;font-size:12px;color:#64748b}
 .seat{border:2px solid;border-radius:12px;height:54px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font:inherit;min-width:0}
 .seat b{font-size:14px}.seat .nm{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -68,8 +68,8 @@ async function pick(id){const s=seats[id];if(s.status==='available'){const n=awa
 async function edit(id){const n=await ask('แก้ไขชื่อ '+id,'ชื่อผู้จองใหม่',seats[id].booker_name,'บันทึก');if(n)act('admin_rename',{p_seat:id,p_name:n})}
 function render(){const R=$('#rows');R.replaceChildren();
  const f=el('div','row one');f.append(seat('1A'),seat('1B'),el('div','num',1),seat('1C'),seat('1D'));R.append(f);
- for(let r=2;r<=9;r++){const d=el('div','row'),sd=l=>{const s=el('div','side');l.forEach(x=>s.append(seat(r+x)));return s};d.append(sd(['A','B']),el('div','num',r),sd(['C','D']));R.append(d)}
- const bk=el('div','row back'),gp=ls=>{const g=el('div','grp');g.style.setProperty('--n',ls.length);ls.forEach(l=>g.append(seat('10'+l)));return g};bk.append(gp(['A','B']),gp(['C','D','E']));R.append(bk);
+ for(let r=2;r<=9;r++){const d=el('div','row'),sd=l=>{const s=el('div','bench');l.forEach(x=>s.append(seat(r+x)));return s};d.append(sd(['A','B']),el('div','num',r),sd(['C','D']));R.append(d)}
+ const bk=el('div','row back');['A','B','C','D','E'].forEach(l=>bk.append(seat('10'+l)));R.append(bk);
  const all=Object.values(seats),n=k=>all.filter(s=>s.status===k).length;
  $('#stats').replaceChildren(...[['ทั้งหมด',all.length],['ว่าง',n('available')],['จองแล้ว',n('booked')]].map(([a,b])=>{const d=el('div','stat');d.append(el('b',0,b),el('span',0,a));return d}));
  $('#qr').textContent=q?'พบ '+document.querySelectorAll('.hit').length+' ที่นั่ง':'';$('#out').textContent=(role==='admin'?'แอดมิน · ':'')+'ออก';
