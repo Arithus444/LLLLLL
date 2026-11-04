@@ -1,0 +1,88 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BUS SEAT BOOKING</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Noto Sans Thai",sans-serif;background:#0f1420;color:#e5e9f2}
+.wrap{max-width:440px;margin:auto;padding:16px}h1{margin:0;font-size:13px;letter-spacing:.25em;color:#7c9cff}h2{margin:2px 0 12px;font-size:24px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stat{background:#1b2233;border-radius:14px;padding:10px;text-align:center}.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:#94a3b8}
+input{width:100%;padding:11px 14px;border:1px solid #334155;border-radius:12px;font-size:16px;background:#1b2233;color:#e5e9f2}
+.legend{display:flex;gap:16px;margin:10px 0;font-size:13px;color:#94a3b8}.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px}
+.bus{background:#2a3042;border-radius:100px 100px 32px 32px;padding:26px 18px 18px;margin:8px 0 16px}
+.front{text-align:center;font-size:12px;color:#94a3b8}.wind{height:44px;background:#0b0e16;margin:6px 10px 14px;clip-path:polygon(0 25%,50% 0,100% 25%,94% 100%,6% 100%)}
+.cab{display:flex;justify-content:space-between;margin-bottom:14px}.cab div{width:80px;height:52px;border-radius:14px;background:#1f2536;display:flex;align-items:center;justify-content:center;font-size:12px;color:#94a3b8}.cab div+div{background:#475069;color:#fff}
+.row{display:grid;grid-template-columns:1fr 1fr 22px 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px}.row.back{grid-template-columns:repeat(5,1fr);margin-top:12px;padding-top:12px;border-top:2px dashed #475069}
+.num{text-align:center;font-size:12px;color:#64748b}
+.seat{border:2px solid;border-radius:12px;height:54px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font:inherit;min-width:0}
+.seat b{font-size:14px}.seat .nm{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.available{background:#14532d;border-color:#22c55e;color:#bbf7d0}.booked{background:#7f1d1d;border-color:#ef4444;color:#fecaca}
+.hit{outline:3px solid #7c9cff;outline-offset:1px}.rear{height:16px;background:#0b0e16;border-radius:10px;margin:16px 14px 0}
+.card{background:#1b2233;border-radius:16px;padding:14px;margin-bottom:16px}
+.btn{border:0;border-radius:10px;padding:10px 14px;font:inherit;background:#3b6cff;color:#fff;cursor:pointer}.btn.g{background:#334155}.btn.r{background:#dc2626}
+.ar{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #334155;gap:6px}.ar span{flex:1}.ar .btn{padding:6px 10px}
+dialog{border:0;border-radius:18px;padding:20px;width:min(92vw,340px);background:#1b2233;color:#e5e9f2}dialog::backdrop{background:#000a}dialog input{margin:8px 0 14px}.btns{display:flex;flex-direction:row-reverse;gap:8px}.btns .btn{flex:1}
+#gate{max-width:340px;margin:18vh auto 0;padding:16px;text-align:center}#gate input{margin:14px 0;text-align:center}#app{display:none}
+#bn{display:none;background:#fef3c7;color:#92400e;border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:14px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#e5e9f2;color:#0f1420;padding:10px 16px;border-radius:12px;display:none;z-index:9}
+</style></head><body>
+<div id="gate"><h1>BUS SEAT BOOKING</h1><h2>ระบบจองที่นั่งรถบัส</h2><div style="color:#94a3b8">ใส่รหัสที่ได้รับเพื่อเข้าใช้งาน</div>
+<input id="code" placeholder="รหัสเข้าใช้งาน" autocomplete="off"><button class="btn" id="go" style="width:100%">เข้าสู่ระบบ</button><div id="dm" style="display:none;margin-top:16px"><div style="color:#fbbf24;font-size:13px">ยังไม่ได้ใส่ SUPABASE_URL / SUPABASE_KEY ในไฟล์ จึงยังเข้าด้วยรหัสไม่ได้</div><button class="btn g" id="demo" style="margin-top:8px;width:100%">ดูตัวอย่างผัง (โหมดทดลอง ไม่บันทึกข้อมูล)</button></div></div>
+<div class="wrap" id="app"><div id="bn"></div>
+<div class="top"><div><h1>BUS SEAT BOOKING</h1><h2>ระบบจองที่นั่งรถบัส</h2></div><button class="btn g" id="out"></button></div>
+<div class="stats" id="stats"></div>
+<input id="q" placeholder="🔍 ค้นหาชื่อผู้จอง"><div id="qr" style="font-size:13px;color:#7c9cff;margin-top:4px"></div>
+<div class="legend"><span><i style="background:#22c55e"></i>ว่าง</span><span><i style="background:#ef4444"></i>จองแล้ว</span></div>
+<div class="bus"><div class="front">▲ ด้านหน้ารถ</div><div class="wind"></div><div class="cab"><div>ประตู</div><div>🧑‍✈️ คนขับ</div></div><div id="rows"></div><div class="rear"></div></div>
+<div id="admin"></div></div>
+<dialog id="dlg"><form method="dialog"><h3 id="dt" style="margin:0"></h3><div id="ds" style="color:#94a3b8"></div><input id="di" maxlength="40" required autocomplete="off"><div class="btns"><button class="btn" value="ok" id="dok"></button><button class="btn g" value="x" formnovalidate>ยกเลิก</button></div></form></dialog>
+<div id="toast"></div>
+<script>
+const SUPABASE_URL='https://fpeowxqcpruegwfqwjlm.supabase.co', SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwZW93eHFjcHJ1ZWd3ZnF3amxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3ODY0NjIsImV4cCI6MjEwOTM2MjQ2Mn0.maaSOvUohCgtC0ZsCSdRgAIss0E-FdefMqF8YH_ouNM';
+const BASE=SUPABASE_URL.replace(/\/$/,''),$=s=>document.querySelector(s);let seats={},role='',code='',q='';
+const DEMO=SUPABASE_URL.includes('YOUR_'),D={};
+['1B','1C','1D'].forEach(i=>D[i]={seat_id:i,status:'available'});for(let r=2;r<=9;r++)'ABCD'.split('').forEach(l=>D[r+l]={seat_id:r+l,status:'available'});'ABCDE'.split('').forEach(l=>D['10'+l]={seat_id:'10'+l,status:'available'});
+function demo(fn,a){const s=D[a.p_seat];if(fn==='check_code')return 'admin';if(fn==='get_seats')return Object.values(D).map(x=>({...x}));
+ if(fn==='book_seat'){if(s.status!=='available')throw new Error('SEAT_TAKEN');s.status='booked';s.booker_name=a.p_name}
+ if(fn==='admin_cancel'){s.status='available';s.booker_name=null}if(fn==='admin_rename')s.booker_name=a.p_name;
+ if(fn==='admin_reset')Object.values(D).forEach(x=>{x.status='available';x.booker_name=null});return null}
+async function rpc(fn,a){if(DEMO)return demo(fn,a);const h={apikey:SUPABASE_KEY,'Content-Type':'application/json'};if(SUPABASE_KEY.startsWith('eyJ'))h.Authorization='Bearer '+SUPABASE_KEY;
+ const r=await fetch(BASE+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(a||{})});const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+ if(!r.ok)throw new Error((j&&j.message)||'HTTP '+r.status);return j}
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2600)}
+function banner(m){const b=$('#bn');b.textContent=m;b.style.display=m?'block':'none'}
+function ask(title,sub,val,ok){return new Promise(r=>{const d=$('#dlg');$('#dt').textContent=title;$('#ds').textContent=sub;$('#di').value=val||'';$('#dok').textContent=ok;d.showModal();d.onclose=()=>r(d.returnValue==='ok'?$('#di').value.trim():null)})}
+function logout(){code='';role='';try{localStorage.removeItem('bus_code')}catch(e){}$('#app').style.display='none';$('#gate').style.display='block'}
+async function enter(c,quiet){if(DEMO){if(!quiet)toast('ยังไม่ได้ตั้งค่า Supabase จึงยังเข้าด้วยรหัสไม่ได้');return}
+ try{const r=await rpc('check_code',{p_code:c});if(r==='none'){if(!quiet)toast('รหัสไม่ถูกต้อง');return}
+  code=c;role=r;try{localStorage.setItem('bus_code',c)}catch(e){}$('#gate').style.display='none';$('#app').style.display='block';await load()}
+ catch(e){if(!quiet)toast('เชื่อมต่อไม่ได้: '+e.message)}}
+async function load(){try{const d=await rpc('get_seats',{p_code:code});seats={};d.forEach(s=>seats[s.seat_id]=s);banner(DEMO?'โหมดทดลอง: ข้อมูลไม่ถูกบันทึก ใช้ดูหน้าตาเท่านั้น':'');render()}
+ catch(e){if(e.message.includes('BAD_CODE')){logout();toast('รหัสถูกเปลี่ยนแล้ว กรุณาใส่ใหม่')}else banner('เชื่อมต่อฐานข้อมูลไม่ได้: '+e.message)}}
+async function act(fn,a,ok){try{await rpc(fn,{p_code:code,...a});if(ok)toast(ok)}catch(e){const m=e.message;toast(m.includes('SEAT_TAKEN')?'ที่นั่งนี้ถูกจองไปแล้ว':m.includes('FORBIDDEN')?'ไม่มีสิทธิ์แอดมิน':m.includes('BAD_CODE')?'รหัสไม่ถูกต้อง':'ผิดพลาด: '+m)}await load()}
+function seat(id){const s=seats[id];if(!s)return el('div');const b=el('button','seat '+s.status);b.append(el('b',0,id));if(s.status==='booked')b.append(el('span','nm',s.booker_name));
+ if(q&&s.booker_name&&s.booker_name.toLowerCase().includes(q))b.classList.add('hit');b.onclick=()=>pick(id);return b}
+async function pick(id){const s=seats[id];if(s.status==='available'){const n=await ask('จองที่นั่ง '+id,'กรอกชื่อของคุณเพื่อยืนยันการจอง','','ยืนยันการจอง');if(n)act('book_seat',{p_seat:id,p_name:n},'จอง '+id+' สำเร็จ')}
+ else if(role==='admin')edit(id);else toast('ที่นั่ง '+id+' จองโดย '+s.booker_name)}
+async function edit(id){const n=await ask('แก้ไขชื่อ '+id,'ชื่อผู้จองใหม่',seats[id].booker_name,'บันทึก');if(n)act('admin_rename',{p_seat:id,p_name:n})}
+function render(){const R=$('#rows');R.replaceChildren();
+ for(let r=1;r<=9;r++){const d=el('div','row');d.append(seat(r+'A'),seat(r+'B'),el('div','num',r),seat(r+'C'),seat(r+'D'));R.append(d)}
+ const bk=el('div','row back');['A','B','C','D','E'].forEach(l=>bk.append(seat('10'+l)));R.append(bk);
+ const all=Object.values(seats),n=k=>all.filter(s=>s.status===k).length;
+ $('#stats').replaceChildren(...[['ทั้งหมด',all.length],['ว่าง',n('available')],['จองแล้ว',n('booked')]].map(([a,b])=>{const d=el('div','stat');d.append(el('b',0,b),el('span',0,a));return d}));
+ $('#qr').textContent=q?'พบ '+document.querySelectorAll('.hit').length+' ที่นั่ง':'';$('#out').textContent=(role==='admin'?'แอดมิน · ':'')+'ออก';
+ const A=$('#admin');A.replaceChildren();if(role!=='admin')return;
+ const c=el('div','card');c.append(el('b',0,'แผงผู้ดูแล'));
+ const bs=all.filter(s=>s.status==='booked').sort((a,b)=>a.seat_id.localeCompare(b.seat_id,'en',{numeric:true}));
+ if(!bs.length)c.append(el('div',0,'ยังไม่มีผู้จอง'));
+ bs.forEach(s=>{const r=el('div','ar');r.append(el('b',0,s.seat_id),el('span',0,s.booker_name));
+  const e=el('button','btn g','แก้ชื่อ');e.onclick=()=>edit(s.seat_id);
+  const x=el('button','btn r','ยกเลิก');x.onclick=()=>confirm('ยกเลิกการจอง '+s.seat_id+' ของ '+s.booker_name+'?')&&act('admin_cancel',{p_seat:s.seat_id});r.append(e,x);c.append(r)});
+ const z=el('button','btn r','รีเซ็ตการจองทั้งหมด');z.style.marginTop='12px';z.onclick=()=>confirm('ล้างการจองทั้งหมด?')&&act('admin_reset',{});c.append(z);A.append(c)}
+$('#go').onclick=()=>enter($('#code').value.trim());$('#code').onkeydown=e=>{if(e.key==='Enter')$('#go').click()};
+$('#out').onclick=logout;$('#q').oninput=e=>{q=e.target.value.trim().toLowerCase();render()};
+setInterval(()=>{if(code&&!document.hidden)load()},3000);
+let saved=null;try{saved=localStorage.getItem('bus_code')}catch(e){}if(DEMO)$('#dm').style.display='block';else if(saved)enter(saved,true);
+$('#demo').onclick=()=>{code='demo';role='admin';$('#gate').style.display='none';$('#app').style.display='block';load()};
+</script></body></html>
+                  
